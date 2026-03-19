@@ -155,7 +155,6 @@ async def cmd_start(message: Message):
 
 @dp.message(Command("nextmatch"))
 async def cmd_next_match(message: Message):
-    print("✅ Команда /nextmatch получена!")
     # Разбираем аргументы команды
     args = message.text.split()
     if len(args) < 2:
@@ -166,15 +165,6 @@ async def cmd_next_match(message: Message):
             "Доступные команды: спартак, цска, локомотив"
         )
         return
-
-# Обработка всех текстовых сообщений (вопросов)
-@dp.message()
-async def handle_question(message: Message):
-    text = message.text.lower()
-    for keyword, reply in answers.items():
-        if keyword in text:
-            await message.reply(reply)
-            return
 
     team = args[1].lower()  # получаем название команды и приводим к нижнему регистру
     if team not in TEAMS:
@@ -190,6 +180,15 @@ async def handle_question(message: Message):
     # Вызываем функцию получения расписания
     result = await get_next_match(team)
     await message.answer(result, parse_mode="Markdown")
+
+# Обработка всех текстовых сообщений (вопросов)
+@dp.message()
+async def handle_question(message: Message):
+    text = message.text.lower()
+    for keyword, reply in answers.items():
+        if keyword in text:
+            await message.reply(reply)
+            return
 
 async def main():
     # Запускаем задачу с напоминаниями
