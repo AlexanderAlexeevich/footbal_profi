@@ -60,52 +60,6 @@ answers = {
     "шансы спартака в следующем матче": "100% победа, ставь хату"
 }   
 
-# Функция для отправки напоминания каждый час
-async def scheduled_reminder():
-    while True:
-        now = datetime.now()
-        # Вычисляем время до следующего часа
-        next_hour = (now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1))
-        seconds_to_wait = (next_hour - now).total_seconds()
-        await asyncio.sleep(seconds_to_wait)
-
-        try:
-            await bot.send_message(chat_id=CHAT_ID, text=REMINDER_TEXT)
-            logging.info(f"Напоминание отправлено в {next_hour}")
-        except Exception as e:
-            logging.error(f"Ошибка отправки: {e}")
-
-# Команда /start
-@dp.message(Command("start"))
-async def cmd_start(message: Message):
-    await message.answer(
-        "Я футбольный эксперт.\n"
-        "Я отвечаю на вопросы о футболе.\n"
-        "Попробуйте спросить мое мнение о своей любимой команде."
-    )
-
-# Обработка всех текстовых сообщений (вопросов)
-@dp.message()
-async def handle_question(message: Message):
-    text = message.text.lower()
-    for keyword, reply in answers.items():
-        if keyword in text:
-            await message.reply(reply)
-            return
-
-async def main():
-    # Запускаем задачу с напоминаниями
-    asyncio.create_task(scheduled_reminder())
-    # Запускаем приём сообщений
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    asyncio.run(main())
-
-def run_bot():
-    asyncio.run(main())
-
 # Точные названия команд с сайта Understat
 TEAMS = {
     "спартак": {
@@ -121,6 +75,21 @@ TEAMS = {
         "display_name": "Локомотив"
     }
 }
+
+# Функция для отправки напоминания каждый час
+async def scheduled_reminder():
+    while True:
+        now = datetime.now()
+        # Вычисляем время до следующего часа
+        next_hour = (now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1))
+        seconds_to_wait = (next_hour - now).total_seconds()
+        await asyncio.sleep(seconds_to_wait)
+
+        try:
+            await bot.send_message(chat_id=CHAT_ID, text=REMINDER_TEXT)
+            logging.info(f"Напоминание отправлено в {next_hour}")
+        except Exception as e:
+            logging.error(f"Ошибка отправки: {e}")
 
 async def get_next_match(team_key: str):
     team_info = TEAMS.get(team_key)
@@ -174,4 +143,65 @@ async def get_next_match(team_key: str):
         # Логируем ошибку (можно заменить на logging.error)
         print(f"Ошибка в get_next_match: {e}")
         return "❌ Не удалось получить расписание. Возможно, временные проблемы с сайтом статистики."
+
+# Команда /start
+@dp.message(Command("start"))
+async def cmd_start(message: Message):
+    await message.answer(
+        "Я футбольный эксперт.\n"
+        "Я отвечаю на вопросы о футболе.\n"
+        "Попробуйте спросить мое мнение о своей любимой команде."
+    )
+
+# Обработка всех текстовых сообщений (вопросов)
+@dp.message()
+async def handle_question(message: Message):
+    text = message.text.lower()
+    for keyword, reply in answers.items():
+        if keyword in text:
+            await message.reply(reply)
+            return
+        
+@dp.message(Command("nextmatch"))
+async def cmd_next_match(message: Message):
+    # Разбираем аргументы команды
+    args = message.text.split()
+    if len(args) < 2:
+        # Если команда без аргумента, показываем подсказку
+        await message.answer(
+            "❗ Укажите команду.\n"
+            "Пример: /nextmatch спартак\n"
+            "Доступные команды: спартак, цска, локомотив"
+        )
+        return
+
+    team = args[1].lower()  # получаем название команды и приводим к нижнему регистру
+    if team not in TEAMS:
+        await message.answer(
+            f"❌ Команда '{team}' не найдена.\n"
+            f"Доступны: {', '.join(TEAMS.keys())}"
+        )
+        return
+
+    # Отправляем статус "печатает", чтобы пользователь знал, что бот работает
+    await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
+
+    # Вызываем функцию получения расписания
+    result = await get_next_match(team)
+    await message.answer(result, parse_mode="Markdown")
+
+async def main():
+    # Запускаем задачу с напоминаниями
+    asyncio.create_task(scheduled_reminder())
+    # Запускаем приём сообщений
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    asyncio.run(main())
+
+def run_bot():
+    asyncio.run(main())
+
+
 
