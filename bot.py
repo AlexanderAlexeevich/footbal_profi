@@ -92,7 +92,6 @@ async def scheduled_reminder():
             logging.error(f"Ошибка отправки: {e}")
 
 async def get_next_match(team_key: str):
-    print("✅ Команда /nextmatch получена!")
     team_info = TEAMS.get(team_key)
     if not team_info:
         return f"❌ Команда '{team_key}' не найдена. Доступны: спартак, цска, локомотив"
@@ -156,6 +155,7 @@ async def cmd_start(message: Message):
 
 @dp.message(Command("nextmatch"))
 async def cmd_next_match(message: Message):
+    print("✅ Команда /nextmatch получена!")
     # Разбираем аргументы команды
     args = message.text.split()
     if len(args) < 2:
