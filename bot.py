@@ -1,6 +1,9 @@
 import asyncio
 import logging
 import os
+import pytz
+from datetime import datetime
+from understatapi import UnderstatClient
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -35,11 +38,11 @@ answers = {
     "что важнее всего в футболе": "Входы в штрафную конечно же, тут даже говорить не о чем",
     "ты умеешь петь": "Да, но я знаю всего одну песню про Максима",
     "спой песню про Максима": """Вот и помер конь Максим 
-        Да и хуй остался с ним 
-        Положили ему в рот 
-        Начал он сосать в заглооот 
-        Он бомжеватый был мужик 
-        Он на хую вертел шашлык""",
+    Да и хуй остался с ним 
+    Положили ему в рот 
+    Начал он сосать в заглооот 
+    Он бомжеватый был мужик 
+    Он на хую вертел шашлык""",
     "максим как цска сыграл": "Ему не интересно",
     "алло": "Алло, это Володька!",
     "как локомотив сыграл": "Руденка все обосрал, еще этот комличенко по мячу не попадает...",
@@ -102,3 +105,73 @@ if __name__ == "__main__":
 
 def run_bot():
     asyncio.run(main())
+
+# Точные названия команд с сайта Understat
+TEAMS = {
+    "спартак": {
+        "understat_name": "Spartak Moscow",
+        "display_name": "Спартак"
+    },
+    "цска": {
+        "understat_name": "CSKA Moscow",
+        "display_name": "ЦСКА"
+    },
+    "локомотив": {
+        "understat_name": "Lokomotiv Moscow",
+        "display_name": "Локомотив"
+    }
+}
+
+async def get_next_match(team_key: str):
+    team_info = TEAMS.get(team_key)
+    if not team_info:
+        return f"❌ Команда '{team_key}' не найдена. Доступны: спартак, цска, локомотив"
+
+    understat_name = team_info["understat_name"]
+    display_name = team_info["display_name"]
+
+    try:
+        with UnderstatClient() as understat:
+            # Запрашиваем матчи РФПЛ за сезон 2025 (2025/2026)
+            league_matches = understat.league(league="RFPL").get_match_data(season="2025")
+
+            # Отбираем будущие матчи с участием нашей команды
+            upcoming = []
+            for match in league_matches:
+                if not match['isResult']:  # матч ещё не сыгран
+                    if match['h']['title'] == understat_name or match['a']['title'] == understat_name:
+                        # Добавляем объект datetime для сортировки
+                        match['datetime_obj'] = datetime.fromisoformat(match['datetime'])
+                        upcoming.append(match)
+
+            if not upcoming:
+                return f"⚽ У команды **{display_name}** пока нет запланированных матчей."
+
+            # Самый ближайший матч
+            next_match = min(upcoming, key=lambda x: x['datetime_obj'])
+
+            # Определяем соперника и место
+            if next_match['h']['title'] == understat_name:
+                opponent = next_match['a']['title']
+                location = "дома"
+            else:
+                opponent = next_match['h']['title']
+                location = "в гостях"
+
+            # Переводим время в московское
+            msk_tz = pytz.timezone('Europe/Moscow')
+            match_date_utc = next_match['datetime_obj'].replace(tzinfo=pytz.UTC)
+            match_date_msk = match_date_utc.astimezone(msk_tz)
+            date_str = match_date_msk.strftime("%d.%m.%Y в %H:%M")
+
+            return (f"⚽ **Ближайший матч {display_name}**\n"
+                    f"🏆 Российская Премьер-Лига\n"
+                    f"🆚 {next_match['h']['title']} — {next_match['a']['title']}\n"
+                    f"📅 {date_str} (мск)\n"
+                    f"📍 {location}")
+
+    except Exception as e:
+        # Логируем ошибку (можно заменить на logging.error)
+        print(f"Ошибка в get_next_match: {e}")
+        return "❌ Не удалось получить расписание. Возможно, временные проблемы с сайтом статистики."
+
