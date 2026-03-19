@@ -153,15 +153,6 @@ async def cmd_start(message: Message):
         "Попробуйте спросить мое мнение о своей любимой команде."
     )
 
-# Обработка всех текстовых сообщений (вопросов)
-@dp.message()
-async def handle_question(message: Message):
-    text = message.text.lower()
-    for keyword, reply in answers.items():
-        if keyword in text:
-            await message.reply(reply)
-            return
-        
 @dp.message(Command("nextmatch"))
 async def cmd_next_match(message: Message):
     # Разбираем аргументы команды
@@ -174,6 +165,15 @@ async def cmd_next_match(message: Message):
             "Доступные команды: спартак, цска, локомотив"
         )
         return
+
+# Обработка всех текстовых сообщений (вопросов)
+@dp.message()
+async def handle_question(message: Message):
+    text = message.text.lower()
+    for keyword, reply in answers.items():
+        if keyword in text:
+            await message.reply(reply)
+            return
 
     team = args[1].lower()  # получаем название команды и приводим к нижнему регистру
     if team not in TEAMS:
