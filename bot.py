@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 def get_current_season():
     """Определяет текущий сезон для РПЛ (начинается летом)"""
-    now = datetime.datetime.now()
+    now = datetime.now()
     # Если сейчас август или позже - используем текущий год
     # Если январь-июль - прошлый год (сезон ещё не начался)
     if now.month >= 8:
