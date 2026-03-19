@@ -401,17 +401,22 @@ async def cmd_table(message: Message):
     eng_to_rus = {v["understat_name"]: v["display_name"] for v in TEAMS.values()}
 
     result = "<b>🏆 Турнирная таблица РПЛ</b>\n\n"
-    result += "<pre>"
-    result += f"{'#':<3} {'Команда':<20} {'И':<3} {'В':<3} {'Н':<3} {'П':<3} {'М':<8} {'±':<5} {'О':<3}\n"
-    result += "─" * 55 + "\n"
-
     for i, team in enumerate(table, 1):
-        name = eng_to_rus.get(team['name'], team['name'])
-        goals = f"{team['goals_for']}-{team['goals_against']}"
-        name_short = name[:20]
-        result += f"{i:<3} {name_short:<20} {team['played']:<3} {team['wins']:<3} {team['draws']:<3} {team['losses']:<3} {goals:<8} {team['goal_diff']:+d} {team['points']:<3}\n"
+        # Определяем медальку для топ-3
+        if i == 1:
+            medal = "🥇"
+        elif i == 2:
+            medal = "🥈"
+        elif i == 3:
+            medal = "🥉"
+        else:
+            medal = f"{i}."
 
-    result += "</pre>\n"
+        name = eng_to_rus.get(team['name'], team['name'])
+        result += f"{medal} <b>{name}</b>\n"
+        result += f"   ⭐ {team['points']} очков | {team['played']} игр | {team['wins']}-{team['draws']}-{team['losses']}\n"
+        result += f"   ⚽ {team['goals_for']}-{team['goals_against']}  (разница: {team['goal_diff']:+d})\n\n"
+
     result += "<i>Обновлено: автоматически</i>"
 
     await message.answer(result, parse_mode="HTML")
