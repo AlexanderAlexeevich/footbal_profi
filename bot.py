@@ -55,6 +55,8 @@ answers = {
     Он на хую вертел шашлык""",
     "максим как цска сыграл": "Ему не интересно",
     "алло": "Алло, это Володька!",
+    "ало": "Алло, это Володька!",
+    "але": "Алло, это Володька!",
     "как локомотив сыграл": "Руденка все обосрал, еще этот комличенко по мячу не попадает...",
     "что думаешь про димона": "Мумбарик лысый",
     "что думаешь про макса": "Душный абьюзер, без негатива",
@@ -104,6 +106,14 @@ async def scheduled_reminder():
             logging.info(f"Напоминание отправлено в {next_hour}")
         except Exception as e:
             logging.error(f"Ошибка отправки: {e}")
+
+        await asyncio.sleep(300)
+
+        try:
+            await bot.send_message(chat_id=CHAT_ID, text="Ладно шучу, ЦСКА - команда гондонов")
+            logging.info(f"Второе напоминание отправлено через 5 минут после {next_hour}")
+        except Exception as e:
+            logging.error(f"Ошибка отправки второго напоминания: {e}")
 
 async def get_next_match(team_key: str):
     team_info = TEAMS.get(team_key)
